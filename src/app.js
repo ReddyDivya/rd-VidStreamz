@@ -15,17 +15,16 @@ app.use(cors(
 ))
 
 // Configure middleware for parsing JSON data and setting a size limit
-app.use(express.json({limit: "16kb"}));
+app.use(express.json({ limit: "16kb" }));
 
 // Configure middleware for parsing URL-encoded data and setting a size limit
-app.use(express.urlencoded({extended: true, limit: "16kb"}));
+app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 
 // Serve static files from the "public" directory, such as images, CSS, and JavaScript
 app.use(express.static("public"));
 
 // Use Cookie Parser middleware for parsing cookies sent with the request
 app.use(cookieParser());
-
 
 //routes import
 import userRouter from "./routes/user.routes.js";
@@ -34,4 +33,4 @@ import userRouter from "./routes/user.routes.js";
 app.use("/api/v1/users", userRouter);//(/api/v1/users-standard practice and it is a prefix)
 
 // Export the Express application instance
-export {app}
+export { app }

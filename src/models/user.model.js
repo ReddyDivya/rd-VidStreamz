@@ -100,5 +100,6 @@ userSchema.methods.generateRefreshToken = function(){
     );
 }
 
-// Creating and exporting the User model based on the defined schema.
+// Creating and exporting the User model based on the defined schema 
+//User directly contact the DB.
 export const User = mongoose.model("User", userSchema);
