@@ -4,15 +4,15 @@ import { User } from "../models/user.model.js";// User model
 import { uploadOnCloudinary } from "../utils/cloudinary.js";//uploadOnCloudinary utility function
 import { ApiResponse } from "../utils/ApiResponse.js";//ApiResponse utility class
 
-//generating access and refresh Tokens
+// Generating access and refresh Tokens
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
         // Find user with the given userId in the database
         const user = await User.findById(userId);
 
         // Generate an access token and a refresh token for the user
-        const accessToken = user.generateAccessToken();
-        const refreshToken = user.generateRefreshToken();
+        const accessToken = user.generateAccessToken(); // Generate access token
+        const refreshToken = user.generateRefreshToken(); // Generate refresh token
 
         // Save the refresh token in the user document
         user.refreshToken = refreshToken;
@@ -27,7 +27,8 @@ const generateAccessAndRefreshTokens = async (userId) => {
         // with status code 500 and an error message
         return new ApiError(500, "Something went wrong while generating refresh and access tokens");
     }
-};//generateAccessAndRefreshTokens
+}; // generateAccessAndRefreshTokens
+
 
 
 // Definition of registerUser function using asyncHandler
@@ -139,67 +140,80 @@ const loginUser = asyncHandler(async (req, res) => {
         6. send cookies
     */
 
-   //1. Get information from the frontend(req body -> data)
-   const {email, username, password} = req.body;
+   // 1. Get information from the frontend(req body -> data)
+   const { email, username, password } = req.body;
 
-   //2. username or email
-   if(!email || !username)  {
+   // 2. Check if username or email is provided
+   if (!email || !username) {
+        // If username or email is not provided, throw a bad request error
         throw new ApiError(400, "username or password is required");
    }
 
-   //3. find the user
+   // 3. Find the user
    // Use Mongoose's findOne() method to search for a user document in the database.
     const user = await User.findOne({
         // Construct a query using the $or operator to find a document where either the username or email matches.
         $or: [
-            // Search for a document where the username, email fields matches the value stored in the username, email variable.
+            // Search for a document where the username or email fields matches the value stored in the username or email variable.
             { username }, { email }
         ]
     });
     
-    if(!user){
-        throw new ApiError(404, "User doesn't exists!");
+    // If user is not found, throw a not found error
+    if (!user) {
+        throw new ApiError(404, "User doesn't exist!");
     }
 
-    //4. password check
+    // 4. Password check
+    // Check if the provided password matches the user's stored password
     const isPasswordValid = await user.isPasswordCorrect(password);
-
-    if(!isPasswordValid)
+    
+    // If the password is not valid, throw an unauthorized error
+    if (!isPasswordValid) {
         throw new ApiError(401, "Invalid user credentials!");
+    }
 
-    //5. access and refresh token
-    const {accessToken, refreshToken} = await generateAccessAndRefreshTokens(user._id);
+    // 5. Generate access and refresh tokens
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
 
-    //6. send cookies
-    //optional step
+    // 6. Send cookies
+    // Fetch the logged in user details from the database
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
 
-    //cookies can be modified by users. So, we are allowing only server to make changes. 
+    // Configure options for setting cookies
     const options = {
         httpOnly : true,
         secure: true,
     }
 
-    //cookieParser in app.js is allowing us the cookies here.
-    return res.status(200).cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
-    .json(
-        new ApiResponse(200, 
-            {
-                //our wish what we want to return to user
-                //already sent tokens in cookie, why to send again?
-                //ans: if user wants to save token from their end may be to save in localstorage, may be developing mobile application there cookies aren't set
-                user: loggedInUser, accessToken, refreshToken
-            },
-                "User logged In successfully"
+    // Set cookies in the response
+    // cookieParser in app.js is allowing us to use cookies here.
+    return res.status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            // Send a success response with the logged in user details and tokens
+            new ApiResponse(200, 
+                {
+                    // Send user details along with tokens
+                    // We send tokens here for cases where users want to save tokens on their end (e.g., local storage) or for mobile applications where cookies aren't set
+                    user: loggedInUser, 
+                    accessToken, 
+                    refreshToken
+                },
+                "User logged in successfully"
             )
-    )
-})
+        )
+}) // loginUser
 
-//logout User
-//remove cookies, refresh token
+
+// Logout User
+// This function is responsible for logging out a user by removing cookies and refreshing tokens
+// Importing the asyncHandler utility function from the asyncHandler.js file located in the utils directory
 const logoutUser = asyncHandler(async (req, res) => {
-    //after logout usually we don't have a `req.user` but we are sending `req.user = user;` in `verifyJWT` middleware(the whole function is the reason we have user data with us)
+    // After logout usually we don't have a `req.user` but we are sending `req.user = user;` in `verifyJWT` middleware (the whole function is the reason we have user data with us)
+    
+    // Update the user document in the database to remove the refresh token
     await User.findByIdAndUpdate(req.user._id, 
         {
             $set: {
@@ -211,21 +225,18 @@ const logoutUser = asyncHandler(async (req, res) => {
         }
     )
 
-    //reset cookies
-    //cookies can be modified by users. So, we are allowing only server to make changes. 
+    // Reset cookies
+    // Cookies can be modified by users. So, we are allowing only the server to make changes. 
     const options = {
         httpOnly : true,
         secure: true,
     }
 
+    // Respond with a success status and clear the cookies
     return res.status(200)
     .clearCookie("accessToken", options)
     .clearCookie("refreshToken", options)
-    .json(new ApiResponse(200, {}, "User is logged Out successfully"));
-
-
-
-})
-
+    .json(new ApiResponse(200, {}, "User is logged out successfully"));
+})//logoutUser
 
 export {registerUser, loginUser, logoutUser};// Exporting functions

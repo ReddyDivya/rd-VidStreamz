@@ -1,13 +1,19 @@
 // This is a middleware for authentication
 
-// Importing the asyncHandler utility function from a file named asyncHandler.js located in the utils directory
+// Importing the User model from the user.model.js file located in the models directory
 import { User } from "../models/user.model.js";
+
+// Importing the ApiError class from the ApiError.js file located in the utils directory
 import { ApiError } from "../utils/ApiError.js";
+
+// Importing the asyncHandler utility function from the asyncHandler.js file located in the utils directory
 import { asyncHandler } from "../utils/asyncHandler.js";
+
+// Importing the jwt module
 import jwt from "jsonwebtoken";
 
 // Defining the verifyJWT middleware function using asyncHandler
-//we are not making use of `res` here. So, we can replace it with `_`
+// We are not making use of `res` here. So, we can replace it with `_`
 export const verifyJWT = asyncHandler(async(req, _, next) => {
     
     try{
@@ -22,25 +28,31 @@ export const verifyJWT = asyncHandler(async(req, _, next) => {
         const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer", "")
 
         if(!token){
-            new ApiError(401, "Unauthorized request");
+            // If token is not present, throw an unauthorized error
+            throw new ApiError(401, "Unauthorized request");
         }
 
-        //decode jwt
+        // Decode jwt
         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         
-        //making a database request
-        //We have given `_id` in `userSchema.methods.generateAccessToken` in user.model.js.
+        // Making a database request to find the user by id decoded from the token
+        // We have given `_id` in `userSchema.methods.generateAccessToken` in user.model.js.
         const user = await User.findById(decodedToken?._id).select("-password -refreshToken");
 
         if(!user){
-            //NEXT_VIDEO: discuss about frontend
-            new ApiError(401, "Invalid Access Token");
+            // If user is not found, throw an invalid access token error
+            // NEXT_VIDEO: discuss about frontend
+            throw new ApiError(401, "Invalid Access Token");
         }
 
+        // Set the user object in the request for further use
         req.user = user;
-        next();//this tells to execute the next function when its job is done
+        
+        // Call the next middleware function in the chain
+        next(); // this tells to execute the next function when its job is done
     }
     catch(error){
+        // If any error occurs, throw an unauthorized error
         throw new ApiError(401, error?.message || "Invalid Access Token");
     }
 })
