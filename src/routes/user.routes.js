@@ -1,12 +1,16 @@
 import {Router} from "express";
-import { registerUser } from "../controllers/user.controller.js";
+import { registerUser, loginUser, logoutUser } from "../controllers/user.controller.js";
 import {upload} from "../middlewares/multer.middleware.js"
+import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-//route
+//routes
+
+//register route
+//`upload` is a middleware which is executed before the `registerUser`
 router.route("/register").post(
-    //1. file handling
+    //1. file handling - this is a middleware
     upload.fields([
         {
             name: "avatar",
@@ -19,5 +23,14 @@ router.route("/register").post(
     ]),
     registerUser, //2. register
 );
+
+//login route
+router.route("/login").post(loginUser);
+
+//secured routes
+//we can give as many middlewares as possible
+//`verifyJWT` is a middleware which is executed before the `logoutUser`
+//the next() in the `verifyJWT` middleware tells to execute the `logoutUser`
+router.route("/logout").post(verifyJWT, logoutUser);
 
 export default router;
