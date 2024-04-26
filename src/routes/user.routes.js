@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { registerUser, loginUser, logoutUser } from "../controllers/user.controller.js";
+import { registerUser, loginUser, logoutUser, refreshAccessToken } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
@@ -32,5 +32,10 @@ router.route("/login").post(loginUser);
 // `verifyJWT` is a middleware which is executed before the `logoutUser`
 // The next() in the `verifyJWT` middleware tells to execute the `logoutUser`
 router.route("/logout").post(verifyJWT, logoutUser);
+
+// Since all JWT verification and token refreshing logic is handled within the `refreshAccessToken` endpoint,
+// there's no need for a separate `verifyJWT` middleware.
+router.route("/refresh-token").post(refreshAccessToken);
+
 
 export default router;

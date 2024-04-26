@@ -1,16 +1,8 @@
 // This is a middleware for authentication
-
-// Importing the User model from the user.model.js file located in the models directory
-import { User } from "../models/user.model.js";
-
-// Importing the ApiError class from the ApiError.js file located in the utils directory
-import { ApiError } from "../utils/ApiError.js";
-
-// Importing the asyncHandler utility function from the asyncHandler.js file located in the utils directory
-import { asyncHandler } from "../utils/asyncHandler.js";
-
-// Importing the jwt module
-import jwt from "jsonwebtoken";
+import { User } from "../models/user.model.js";//User model
+import { ApiError } from "../utils/ApiError.js";//handles api errors
+import { asyncHandler } from "../utils/asyncHandler.js";//utility function
+import jwt from "jsonwebtoken";//jwt module
 
 // Defining the verifyJWT middleware function using asyncHandler
 // We are not making use of `res` here. So, we can replace it with `_`
@@ -41,7 +33,6 @@ export const verifyJWT = asyncHandler(async(req, _, next) => {
 
         if(!user){
             // If user is not found, throw an invalid access token error
-            // NEXT_VIDEO: discuss about frontend
             throw new ApiError(401, "Invalid Access Token");
         }
 

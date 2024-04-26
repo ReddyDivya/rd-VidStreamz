@@ -2,11 +2,12 @@
 //using promises 
 const asyncHandler = (requestHandler) => {
     return (req, res, next) => {
-        Promise.resolve(requestHandler(req, res, next)).catch((error) => next(error))
+        Promise.resolve(requestHandler(req, res, next)).catch((err) => next(err))
     }
 }
 
 export { asyncHandler }
+
 
 // //using try-catch for practice
 // // Define an asynchronous middleware function called asyncHandler
