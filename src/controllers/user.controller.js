@@ -327,7 +327,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     //we get `req.user` through a middleware
     return res
         .status(200)
-        .json(new ApiResponse(200, req.user, "Current user fetched successfully!"));
+        .json(new ApiResponse(200, req.user, "User fetched successfully!"));
 });
 
 // Update account details endpoint handler
@@ -371,6 +371,7 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
         throw new ApiError(400, "Avatar file is missing");
     }
 
+    //TODO: delete old image, make utility function: L19:4m(timestamp)
     // Upload the avatar to Cloudinary and get the URL
     const avatar = await uploadOnCloudinary(avatarLocalPath);
 
@@ -434,5 +435,6 @@ const updateUserCoverImage = asyncHandler(async(req, res) => {
         new ApiResponse(200, user, "Cover image updated successfully")
     )
 });//updateUserCoverImage
+
 
 export {registerUser, loginUser, logoutUser, refreshAccessToken, changeCurrentPassword, updateAccountDetails,  updateUserAvatar, updateUserCoverImage};// Exporting functions
