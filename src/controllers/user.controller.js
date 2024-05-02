@@ -436,5 +436,88 @@ const updateUserCoverImage = asyncHandler(async(req, res) => {
     )
 });//updateUserCoverImage
 
+// Function to get user channel profile
+const getUserChannelProfile = asyncHandler(async(req, res) => {
+    const {username} = req.params;
 
-export {registerUser, loginUser, logoutUser, refreshAccessToken, changeCurrentPassword, updateAccountDetails,  updateUserAvatar, updateUserCoverImage};// Exporting functions
+    // Check if username is provided
+    if(!username?.trim()){
+        throw new ApiError(400, "Username is missing");
+    }
+
+    // Aggregate query to fetch user's channel profile
+    const channel = await User.aggregate([
+
+        // Match the document based on username
+        {
+            $match: {
+                username: username?.toLowerCase()
+            }
+        },
+
+        // Perform a left outer join with subscriptions collection to get subscribers
+        {
+            $lookup:{
+                // Subscription from subscription.model.js - here the model name converts to plural and lowercase like `subscriptions`
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "channel",
+                as: "subscribers",
+            }
+        },
+
+        // Perform a left outer join with subscriptions collection to get channels subscribed to
+        {
+            $lookup:{
+                from: "subscriptions",
+                localField:"_id",
+                foreignField: "subscriber",
+                as: "subscribedTo",
+            }
+        },
+        // Add fields to the document to include subscribers count, channels subscribed to count, and whether the user is subscribed
+        {
+            $addFields:{
+                subscribersCount: {
+                    $size: "$subscribers",
+                },
+                channelsSubscribedToCount: {
+                    $size: "$subscribedTo",
+                },
+                isSubscribed: {
+                    $cond:{
+                        if: {$in: [req.user?._id, "$subscribers.subscriber"]}, // Check if the logged-in user is among the subscribers
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        },
+
+        // Project only the required fields for the response
+        {
+            $project:{
+                fullname: 1,
+                username: 1,
+                subscribersCount: 1,
+                channelsSubscribedToCount: 1,
+                isSubscribed : 1,
+                avatar: 1,
+                coverImage: 1,
+                email: 1,
+            }
+        }
+    ]);
+
+    if(!channel?.length){
+        throw new ApiError(404, "Channel doesn't exists");
+    }
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, channel[0], "User channel fetched succesfully")
+    )
+}); // End of getUserChannelProfile function
+
+export {registerUser, loginUser, logoutUser, refreshAccessToken, changeCurrentPassword, updateAccountDetails,  updateUserAvatar, updateUserCoverImage, getUserChannelProfile};// Exporting functions
