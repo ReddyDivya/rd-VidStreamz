@@ -475,6 +475,7 @@ const getUserChannelProfile = asyncHandler(async(req, res) => {
                 as: "subscribedTo",
             }
         },
+
         // Add fields to the document to include subscribers count, channels subscribed to count, and whether the user is subscribed
         {
             $addFields:{
@@ -520,4 +521,64 @@ const getUserChannelProfile = asyncHandler(async(req, res) => {
     )
 }); // End of getUserChannelProfile function
 
-export {registerUser, loginUser, logoutUser, refreshAccessToken, changeCurrentPassword, updateAccountDetails,  updateUserAvatar, updateUserCoverImage, getUserChannelProfile};// Exporting functions
+// Function to retrieve user's watch history
+const getWatchHistory = asyncHandler(async (req, res) => {
+    // Aggregate query to retrieve user's watch history
+    const user = await User.aggregate([
+        {
+            // Match the document based on the user's ID
+            $match: {
+                _id: new mongoose.Types.ObjectId(req.user._id)
+            }
+        },
+        {
+            $lookup: {
+                // Perform a left outer join with the videos collection to fetch watch history
+                from: "videos",
+                localField: "watchHistory",
+                foreignField: "_id",
+                as: "watchHistory",
+                // Sub-pipelines to further manipulate the joined data
+                pipeline: [
+                    {
+                        $lookup: {
+                            // Perform a left outer join with the users collection to fetch video owners' details
+                            from: "users",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "owner",
+                            pipeline: [
+                                {
+                                    $project: {
+                                        fullName: 1,
+                                        username: 1,
+                                        avatar: 1,
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields: {
+                            // Extract the first element of the 'owner' array to simplify the structure
+                            owner: {
+                                $first: "$owner",
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ]);
+
+    // Respond with the retrieved watch history
+    return res
+        .status(200)
+        .json(new ApiResponse(200,
+            user[0].watchHistory,
+            "Watch history fetched successfully")
+        );
+}); // End of getWatchHistory function
+
+
+export {registerUser, loginUser, logoutUser, refreshAccessToken, changeCurrentPassword, updateAccountDetails,  updateUserAvatar, updateUserCoverImage, getUserChannelProfile, getWatchHistory};// Exporting functions
