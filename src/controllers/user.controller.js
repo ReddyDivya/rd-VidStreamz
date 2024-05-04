@@ -216,8 +216,8 @@ const logoutUser = asyncHandler(async (req, res) => {
     // Update the user document in the database to remove the refresh token
     await User.findByIdAndUpdate(req.user._id, 
         {
-            $set: {
-                refreshToken: undefined
+            $unset: {
+                refreshToken: 1,//this removes the field from document
             }
         },    
         {
@@ -581,4 +581,4 @@ const getWatchHistory = asyncHandler(async (req, res) => {
 }); // End of getWatchHistory function
 
 
-export {registerUser, loginUser, logoutUser, refreshAccessToken, changeCurrentPassword, updateAccountDetails,  updateUserAvatar, updateUserCoverImage, getUserChannelProfile, getWatchHistory};// Exporting functions
+export {registerUser, loginUser, logoutUser, refreshAccessToken, changeCurrentPassword, getCurrentUser, updateAccountDetails,  updateUserAvatar, updateUserCoverImage, getUserChannelProfile, getWatchHistory};// Exporting functions
